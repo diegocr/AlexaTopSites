@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+	<Description about="urn:mozilla:install-manifest">
+		<em:id>{e14cea6e-3529-4033-81e0-6679f201d75d}</em:id>
+		<em:type>2</em:type>
+		<em:name>AlexaTopSites</em:name>
+		<em:version>1.0</em:version>
+		<em:creator>Diego Casorran &lt;dcasorran@gmail.com&gt;</em:creator>
+		<em:description>Quick access to Alexa's Top Sites</em:description>
+		<em:bootstrap>true</em:bootstrap>
+		<em:targetApplication>
+			<Description>
+				<!-- Firefox -->
+				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+				<em:minVersion>7.0</em:minVersion>
+				<em:maxVersion>22.0</em:maxVersion>
+			</Description>
+		</em:targetApplication>
+		<em:targetApplication>
+			<Description>
+				<!-- SeaMonkey -->
+				<em:id>{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}</em:id>
+				<em:minVersion>2.3</em:minVersion>
+				<em:maxVersion>2.16a1</em:maxVersion>
+			</Description>
+		</em:targetApplication>
+	</Description>
+</RDF>
