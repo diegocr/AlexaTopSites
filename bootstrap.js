@@ -244,7 +244,7 @@ function loadIntoWindow(window) {
 		getBrowser(window).loadOneTab(url,null,null,null,backgroundTab,true);
 	};
 	
-	let ToolbarHandler = (function(ev) {
+	let TBBHandler = (function(ev) {
 		ev.preventDefault();
 		
 		if($(addon.tag+'-toolbar-button').getAttribute('image') != rsc('icon16.png')) {
@@ -259,7 +259,8 @@ function loadIntoWindow(window) {
 					
 					for each(let i in sites[u]) {
 						
-						s.push(i.link);
+						if(!~s.indexOf(i.link))
+							s.push(i.link);
 					}
 				}
 				
@@ -388,16 +389,17 @@ function loadIntoWindow(window) {
 		}
 	}).bind(i$);
 	
+	addon.wms.set(window,{TBBHandler:TBBHandler});
+	
 	let gNavToolbox = window.gNavToolbox || $('navigator-toolbox');
 	if(gNavToolbox && gNavToolbox.palette.id == 'BrowserToolbarPalette') {
 		let m = addon.tag+'-toolbar-button';
 		gNavToolbox.palette.appendChild(e('toolbarbutton',{
 			id:m,label:addon.name,class:'toolbarbutton-1',
 			tooltiptext:addon.name,image:rsc('icon16.png')
-		})).addEventListener('click', ToolbarHandler, false);
+		})).addEventListener('click', TBBHandler, false);
 		
-		if(addon.branch.getBoolPref("firstRun")) {
-			addon.branch.setBoolPref("firstRun", false);
+		if(!addon.branch.getPrefType("version")) {
 			let nBar = $('nav-bar');
 			if(nBar) {
 				nBar.insertItem(m, null, null, false);
@@ -418,7 +420,8 @@ function loadIntoWindow(window) {
 		let (mps = $('mainPopupSet')) {
 			try {
 				mps.appendChild(e('menupopup',{id:addon.tag+'-popup',position:'after_end'}));
-				mps.appendChild(e('panel',{id:addon.tag+'-context',position:'after_end'}));
+				mps.appendChild(e('panel',{id:addon.tag+'-context',backdrag:'true',
+					position:'bottomcenter topleft',type:'arrow'}));
 				
 				let (p = $(m)) {
 					p.setAttribute('popup',addon.tag+'-popup');
@@ -429,6 +432,7 @@ function loadIntoWindow(window) {
 			}
 		}
 	}
+	gNavToolbox = null;
 	
 	i$.getSites($);
 }
@@ -457,6 +461,16 @@ function loadIntoWindowStub(domWindow) {
 function unloadFromWindow(window) {
 	let $ = function(n) window.document.getElementById(n);
 	let btnId = addon.tag+'-toolbar-button',btn= $(btnId);
+	
+	if(addon.wms.has(window)) {
+		let wmsData = addon.wms.get(window);
+		
+		if(wmsData.TBBHandler && btn) {
+			btn.removeEventListener('click',wmsData.TBBHandler,false);
+		}
+		addon.wms.delete(window);
+	}
+	
 	if(btn) {
 		btn.parentNode.removeChild(btn);
 	} else {
@@ -494,51 +508,45 @@ Storage.prototype = {
 		this.branch.setComplexValue(k,ss,t);
 	},
 	save: function() {
-		this.put('$'+addon.id.substr(1,8),this.times);
+		if(Object.keys(this.times).length) {
+			this.put('$'+addon.id.substr(1,8),this.times);
+		}
 	},
 	mess: function(data) let (b = this.bit) data.split('')
 		.map(function(n) String.fromCharCode(n.charCodeAt(0) ^ b)).join(""),
 };
 
-function setup(data) {
-	
-	let io = Services.io, wm = Services.wm;
-	
-	addon = {
-		id: data.id,
-		name: data.name,
-		version: data.version,
-		tag: data.name.toLowerCase().replace(/[^\w]/g,''),
-		wms: new WeakMap()
-	};
-	
-	addon.branch = Services.prefs.getBranch('extensions.'+addon.tag+'.');
-	addon.storage = new Storage();
-	try {
-		addon.branch.getBoolPref("firstRun");
-	} catch(e) {
-		addon.branch.setBoolPref("firstRun", true);
-	}
-	
-	io.getProtocolHandler("resource")
-		.QueryInterface(Ci.nsIResProtocolHandler)
-		.setSubstitution(addon.tag,
-			io.newURI(__SCRIPT_URI_SPEC__+'/../',null,null));
-	
-	let windows = wm.getEnumerator("navigator:browser");
-	while(windows.hasMoreElements()) {
-		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-		loadIntoWindowStub(domWindow);
-	}
-	wm.addListener(i$);
-	
-	i$.startup();
-}
-
 function startup(data) {
 	let tmp = {};
 	Cu.import("resource://gre/modules/AddonManager.jsm", tmp);
-	tmp.AddonManager.getAddonByID(data.id,setup);
+	tmp.AddonManager.getAddonByID(data.id,function(data) {
+		let io = Services.io, wm = Services.wm;
+		
+		addon = {
+			id: data.id,
+			name: data.name,
+			version: data.version,
+			tag: data.name.toLowerCase().replace(/[^\w]/g,''),
+			wms: new WeakMap()
+		};
+		addon.branch = Services.prefs.getBranch('extensions.'+addon.tag+'.');
+		addon.storage = new Storage();
+		
+		io.getProtocolHandler("resource")
+			.QueryInterface(Ci.nsIResProtocolHandler)
+			.setSubstitution(addon.tag,
+				io.newURI(__SCRIPT_URI_SPEC__+'/../',null,null));
+		
+		let windows = wm.getEnumerator("navigator:browser");
+		while(windows.hasMoreElements()) {
+			let diegocr = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
+			loadIntoWindowStub(diegocr);
+		}
+		wm.addListener(i$);
+		
+		i$.startup();
+		addon.branch.setCharPref('version', addon.version);
+	});
 }
 
 function shutdown(data, reason) {

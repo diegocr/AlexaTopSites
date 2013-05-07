@@ -4,7 +4,7 @@
 		<em:id>{e14cea6e-3529-4033-81e0-6679f201d75d}</em:id>
 		<em:type>2</em:type>
 		<em:name>AlexaTopSites</em:name>
-		<em:version>1.0</em:version>
+		<em:version>1.2</em:version>
 		<em:creator>Diego Casorran &lt;dcasorran@gmail.com&gt;</em:creator>
 		<em:description>Quick access to Alexa's Top Sites</em:description>
 		<em:bootstrap>true</em:bootstrap>
