@@ -97,7 +97,7 @@ let i$ = {
 								
 								items[n] = {
 									link: link,
-									rate: rate || -1,
+									// rate: rate || -1,
 									desc: i$.m1(/<div class="description">(.*?)<\/div>/,sl)
 										.replace(/\s*\.+\s*More/,'')
 								};
