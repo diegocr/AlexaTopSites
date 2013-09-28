@@ -92,12 +92,12 @@ let i$ = {
 								
 								let rate = parseFloat(i$.m1(/ title="([\d.]+) Stars"/,sl))*2;
 								
-								if(!rate || rate < c.minr)
+								if(!isNaN(rate) && (!rate || rate < c.minr))
 									return;
 								
 								items[n] = {
-									rate: rate,
 									link: link,
+									rate: rate || -1,
 									desc: i$.m1(/<div class="description">(.*?)<\/div>/,sl)
 										.replace(/\s*\.+\s*More/,'')
 								};
@@ -354,7 +354,7 @@ function loadIntoWindow(window) {
 							e('groupbox',0,[
 								e('hbox',{align:'baseline'},[
 									e('label',{value:'Sites per Country:',control:addon.tag+'-spc'}),
-									e('textbox',{type:'number',min:10,max:100,value:st.spc,size:4,id:addon.tag+'-spc'}),
+									e('textbox',{type:'number',min:5,max:100,value:st.spc,size:4,id:addon.tag+'-spc'}),
 									e('label',{value:'Rating:',control:addon.tag+'-minr'}),
 									e('textbox',{type:'number',min:1,max:10,value:st.minr,size:3,id:addon.tag+'-minr',
 										tooltiptext:'Min rate for a site to be shown'}),
@@ -400,21 +400,25 @@ function loadIntoWindow(window) {
 		})).addEventListener('click', TBBHandler, false);
 		
 		if(!addon.branch.getPrefType("version")) {
-			let nBar = $('nav-bar');
-			if(nBar) {
-				nBar.insertItem(m, null, null, false);
-				nBar.setAttribute("currentset", nBar.currentSet);
-				window.document.persist('nav-bar', "currentset");
+			let nv = $('nav-bar') || $('addon-bar');
+			if( nv ) {
+				nv.insertItem(m, null, null, false);
+				nv.setAttribute("currentset", nv.currentSet);
+				window.document.persist(nv.id, "currentset");
 			}
 		} else {
-			for each(let toolbar in window.document.querySelectorAll("toolbar[currentset]")) try {
-				let cSet = toolbar.getAttribute("currentset") || '';
-				if(cSet.split(",").some(function(x) x == m, this)) {
-					toolbar.currentSet = cSet;
-					window.BrowserToolboxCustomizeDone(true);
-					break;
-				}
-			} catch(e) {}
+			[].some.call(window.document.querySelectorAll("toolbar[currentset]"),
+				function(tb) {
+					let cs = tb.getAttribute("currentset").split(","),
+						bp = cs.indexOf(m) + 1;
+					
+					if(bp) {
+						let at = null;
+						cs.splice(bp).some(function(id) at = $(id));
+						tb.insertItem(m, at, null, false);
+						return true;
+					}
+				});
 		}
 		
 		let (mps = $('mainPopupSet')) {
@@ -439,11 +443,13 @@ function loadIntoWindow(window) {
 
 function getBrowser(w) {
 	
-	try {
+	if(typeof w.getBrowser === 'function')
 		return w.getBrowser();
-	} catch(e) {
+	
+	if("gBrowser" in w)
 		return w.gBrowser;
-	}
+	
+	return w.BrowserApp.deck;
 }
 
 function loadIntoWindowStub(domWindow) {
